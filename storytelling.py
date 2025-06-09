@@ -5,6 +5,7 @@ import plotly.express as px
 st.set_page_config(page_title="Histórias de Consumo", layout="wide")
 st.title("Como Gastamos: Perfis, Prioridades e Padrões de Consumo no Brasil")
 
+st.text("Em um cenário onde os dados financeiros representam traços comportamentais, este estudo analisa um banco de dados real com transações para buscar entender quem gasta mais, como, quando e por quê.")
 df = pd.read_csv('dataset_bancario_tratado.csv', sep=';', encoding='utf-8', dtype=str)
 df['valor'] = df['valor'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
 df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
@@ -17,25 +18,37 @@ st.header("Quem gasta mais em...")
 categorias = sorted(df['grupo_estabelecimento'].dropna().unique())
 cat_escolhida = st.selectbox("Escolha uma categoria:", categorias)
 df_cat = df[df['grupo_estabelecimento'] == cat_escolhida]
-df_top = df_cat.groupby('cliente')['valor'].sum().reset_index().sort_values(by='valor', ascending=False).head(20)
-fig1 = px.bar(df_top, x='cliente', y='valor', title=f'20 Clientes em {cat_escolhida}')
+df_top = df_cat.groupby(['cliente', 'sexo', 'idade'])['valor'].sum().reset_index().sort_values(by='valor', ascending=False).head(20)
+fig1 = px.bar(df_top, x='cliente', y='valor', 
+              hover_data=['sexo', 'idade'],
+              title=f'Clientes em {cat_escolhida}')
 st.plotly_chart(fig1, use_container_width=True)
 
 st.header("Homens vs. Mulheres no Consumo")
 df_heat = df.groupby(['sexo', 'grupo_estabelecimento'])['valor'].sum().reset_index()
-df_heat['grupo_estabelecimento'] = df_heat['grupo_estabelecimento'].astype('category')
+
+# Contar quantidade de clientes por sexo
+clientes_por_sexo = df.groupby('sexo')['id'].nunique().reset_index()
+clientes_por_sexo.columns = ['sexo', 'total_clientes']
+
+# Juntar para normalizar o valor
+df_heat = df_heat.merge(clientes_por_sexo, on='sexo')
+df_heat['valor_normalizado'] = df_heat['valor'] / df_heat['total_clientes']
+
+# Ordenar categorias
 ordem_categorias = df_heat.groupby('grupo_estabelecimento')['valor'].sum().sort_values(ascending=False).index
-df_heat['grupo_estabelecimento'] = df_heat['grupo_estabelecimento'].cat.set_categories(ordem_categorias, ordered=True)
+df_heat['grupo_estabelecimento'] = pd.Categorical(df_heat['grupo_estabelecimento'], categories=ordem_categorias, ordered=True)
 
 fig2 = px.density_heatmap(df_heat,
                          x='grupo_estabelecimento',
                          y='sexo',
-                         z='valor',
-                         color_continuous_scale='Viridis',
-                         labels={'grupo_estabelecimento': 'Categoria', 'sexo': 'Sexo', 'valor': 'Total de Gastos (R$)'},
-                         title='Mapa de Calor dos Gastos por Sexo e Categoria',
+                         z='valor_normalizado',
+                         color_continuous_scale='Greys',
+                         labels={'grupo_estabelecimento': 'Categoria', 'sexo': 'Sexo', 'valor_normalizado': 'Gasto Médio por Cliente (R$)'},
+                         title='Mapa de Calor dos Gastos Médios por Sexo e Categoria',
                          text_auto='.2s')
 fig2.update_layout(xaxis_tickangle=45)
+fig2.update_coloraxes(colorbar_title='Gasto Médio por Cliente (R$)')
 st.plotly_chart(fig2, use_container_width=True)
 
 st.header("Perfis de Consumo")
