@@ -5,7 +5,9 @@ import plotly.express as px
 st.set_page_config(page_title="Histórias de Consumo", layout="wide")
 st.title("Como Gastamos: Perfis, Prioridades e Padrões de Consumo no Brasil")
 
-st.text("Em um cenário onde os dados financeiros representam traços comportamentais, este estudo analisa um banco de dados real com transações para buscar entender quem gasta mais, como, quando e por quê.")
+st.text('Imagine que cada compra que você faz — o café da manhã na padaria, o remédio na farmácia, ou aquela passagem de avião comprada com antecedência — deixa uma pequena pista sobre quem você é. Agora imagine reunir milhões dessas pistas, anonimizadas, e organizá-las para entender um grande retrato coletivo.')
+st.text("Essa é a proposta do nosso projeto: descobrir histórias por trás dos números. Usamos dados reais de transações financeiras para mapear quem gasta mais, em que tipo de estabelecimento, com que frequência, e em qual momento da vida.")
+st.text("Ao longo desta análise, teremos perfis de consumidores, diferenças entre homens e mulheres, padrões por faixa etária, e até categorias de consumo com maior impacto financeiro ou social.")
 df = pd.read_csv('dataset_bancario_tratado.csv', sep=';', encoding='utf-8', dtype=str)
 df['valor'] = df['valor'].str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
 df['valor'] = pd.to_numeric(df['valor'], errors='coerce')
